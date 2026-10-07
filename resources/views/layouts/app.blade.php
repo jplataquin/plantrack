@@ -7,7 +7,7 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Plan Track') }} - Retro Neon</title>
+    <title>@hasSection('title')@yield('title') - @endif{{ config('app.name', 'Plantrack') }}</title>
 
     <!-- Fonts -->
     <link rel="dns-prefetch" href="//fonts.bunny.net">

@@ -16,6 +16,7 @@ class LoginScreenTest extends TestCase
         $response = $this->get('/login');
 
         $response->assertStatus(200);
+        $response->assertSee('<title>Plantrack</title>', false);
     }
 
     public function test_login_screen_does_not_contain_demo_account_options(): void

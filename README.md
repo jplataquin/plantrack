@@ -269,6 +269,23 @@ To require a password reset on initial login:
 php artisan admin:create --name="Lead Admin" --email="admin@example.com" --reset
 ```
 
+### Resetting Administrator Passwords
+
+To reset an existing administrator's password:
+
+```bash
+# Provide custom password
+php artisan admin:reset-password admin@example.com --password="NewSecurePassword123!"
+
+# Or generate a temporary random key automatically
+php artisan admin:reset-password admin@example.com
+
+# Optionally enforce password reset upon next login
+php artisan admin:reset-password admin@example.com --reset
+```
+
+Aliases available: `php artisan admin:password` and `php artisan admin:reset`.
+
 ### Option B: Seed Sample Records (Testing / Staging Only)
 
 If you are deploying a test/staging environment and want initial sample data (projects, plans, components, and default roles):
