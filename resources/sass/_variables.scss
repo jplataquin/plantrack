@@ -1,0 +1,31 @@
+// Retro Neon Theme Bootstrap Variables
+$body-bg: #0a0814;
+$body-color: #ffffff;
+$text-muted: #cbd5e1;
+
+// Bootstrap Core Palette Overrides (Retro Neon)
+$primary:       #00f0ff; // Neon Cyan
+$secondary:     #94a3b8; // Cyber Slate
+$success:       #00ff88; // Neon Green (Hit / Close)
+$danger:        #a855f7; // Neon Violet (Missed / Risks / Errors)
+$warning:       #ffe600; // Neon Amber / Yellow (Review)
+$info:          #ff6b00; // Neon Sunset Orange (Resources)
+$light:         #120f24; // Deep Card Background
+$dark:          #0a0814; // Deep Space Black
+
+// Card
+$card-bg: #120f24;
+$card-color: #ffffff;
+$card-border-color: rgba(0, 240, 255, 0.25);
+
+// Table
+$table-bg: transparent;
+$table-color: #ffffff;
+$table-border-color: rgba(0, 240, 255, 0.15);
+$table-hover-bg: rgba(0, 240, 255, 0.08);
+$table-hover-color: #ffffff;
+
+// Typography
+$font-family-sans-serif: 'Nunito', sans-serif;
+$font-size-base: 0.9rem;
+$line-height-base: 1.6;
