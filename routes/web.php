@@ -119,6 +119,8 @@ Route::middleware('auth')->group(function () {
         Route::get('users', [AdminController::class, 'index'])->name('users.index');
         Route::get('users/create', [AdminController::class, 'createUser'])->name('users.create');
         Route::post('users', [AdminController::class, 'storeUser'])->name('users.store');
+        Route::get('users/{user}/edit', [AdminController::class, 'editUser'])->name('users.edit');
+        Route::put('users/{user}', [AdminController::class, 'updateUser'])->name('users.update');
         Route::get('marshalls/create', [AdminController::class, 'createMarshall'])->name('marshalls.create');
         Route::post('marshalls', [AdminController::class, 'storeMarshall'])->name('marshalls.store');
         Route::get('executors/create', [AdminController::class, 'createExecutor'])->name('executors.create');

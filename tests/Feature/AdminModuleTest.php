@@ -328,4 +328,138 @@ class AdminModuleTest extends TestCase
         $response->assertSee('ADMIN');
         $response->assertSee('Admin Console');
     }
+
+    public function test_admin_can_view_edit_user_page_for_non_admin_operatives(): void
+    {
+        $response = $this->actingAs($this->admin)->get(route('admin.users.edit', $this->marshall));
+        $response->assertStatus(200);
+        $response->assertViewIs('admin.edit-user');
+        $response->assertSee($this->marshall->name);
+        $response->assertSee($this->marshall->email);
+    }
+
+    public function test_admin_cannot_view_edit_page_for_another_admin(): void
+    {
+        $otherAdmin = User::factory()->create([
+            'email' => 'otheradmin@test.com',
+            'must_reset_password' => false,
+        ]);
+        $otherAdmin->assignRole('Admin');
+
+        $response = $this->actingAs($this->admin)->get(route('admin.users.edit', $otherAdmin));
+        $response->assertStatus(403);
+    }
+
+    public function test_admin_can_update_operative_profile_and_role(): void
+    {
+        $response = $this->actingAs($this->admin)->put(route('admin.users.update', $this->marshall), [
+            'name' => 'Promoted Commander Marshall',
+            'email' => 'promoted.marshall@test.com',
+            'role' => 'Executor', // Transition role to Executor
+        ]);
+
+        $response->assertRedirect(route('admin.index'));
+        $response->assertSessionHas('success');
+
+        $updatedUser = $this->marshall->fresh();
+        $this->assertEquals('Promoted Commander Marshall', $updatedUser->name);
+        $this->assertEquals('promoted.marshall@test.com', $updatedUser->email);
+        $this->assertTrue($updatedUser->hasRole('Executor'));
+        $this->assertFalse($updatedUser->hasRole('Marshall'));
+    }
+
+    public function test_admin_can_reset_operative_password_with_direct_login(): void
+    {
+        $response = $this->actingAs($this->admin)->put(route('admin.users.update', $this->marshall), [
+            'name' => $this->marshall->name,
+            'email' => $this->marshall->email,
+            'role' => 'Marshall',
+            'new_password' => 'NewResetPass123!',
+            'force_password_reset' => 0,
+        ]);
+
+        $response->assertRedirect(route('admin.index'));
+        $response->assertSessionHas('success');
+        $response->assertSessionHas('created_marshall_password', 'NewResetPass123!');
+        $response->assertSessionHas('created_marshall_must_reset', false);
+
+        $updatedMarshall = $this->marshall->fresh();
+        $this->assertTrue(Hash::check('NewResetPass123!', $updatedMarshall->password));
+        $this->assertFalse($updatedMarshall->must_reset_password);
+
+        // Marshall logs in with new password directly
+        auth()->logout();
+        $loginResponse = $this->post('/login', [
+            'email' => $this->marshall->email,
+            'password' => 'NewResetPass123!',
+        ]);
+        $loginResponse->assertRedirect('/home');
+        $this->assertAuthenticatedAs($updatedMarshall);
+    }
+
+    public function test_admin_can_reset_operative_password_with_enforced_reset(): void
+    {
+        $response = $this->actingAs($this->admin)->put(route('admin.users.update', $this->marshall), [
+            'name' => $this->marshall->name,
+            'email' => $this->marshall->email,
+            'role' => 'Marshall',
+            'new_password' => 'TempOverridePass99!',
+            'force_password_reset' => 1,
+        ]);
+
+        $response->assertRedirect(route('admin.index'));
+        $response->assertSessionHas('created_marshall_must_reset', true);
+
+        $updatedMarshall = $this->marshall->fresh();
+        $this->assertTrue(Hash::check('TempOverridePass99!', $updatedMarshall->password));
+        $this->assertTrue($updatedMarshall->must_reset_password);
+
+        // Marshall authenticates then gets redirected to force-reset
+        auth()->logout();
+        $loginResponse = $this->post('/login', [
+            'email' => $this->marshall->email,
+            'password' => 'TempOverridePass99!',
+        ]);
+        $loginResponse->assertRedirect('/home');
+
+        $navResponse = $this->actingAs($updatedMarshall)->get(route('executors.index'));
+        $navResponse->assertRedirect(route('password.force_reset'));
+    }
+
+    public function test_admin_cannot_update_another_admin(): void
+    {
+        $otherAdmin = User::factory()->create([
+            'email' => 'secureadmin@test.com',
+            'must_reset_password' => false,
+        ]);
+        $otherAdmin->assignRole('Admin');
+
+        $response = $this->actingAs($this->admin)->put(route('admin.users.update', $otherAdmin), [
+            'name' => 'Attempted Overwrite',
+            'email' => 'overwritten@test.com',
+            'role' => 'Executor',
+            'new_password' => 'HackedPassword123!',
+        ]);
+
+        $response->assertStatus(403);
+        $this->assertEquals('secureadmin@test.com', $otherAdmin->fresh()->email);
+    }
+
+    public function test_non_admin_cannot_access_edit_or_update_user(): void
+    {
+        // Marshall cannot edit user
+        $response = $this->actingAs($this->marshall)->get(route('admin.users.edit', $this->executor));
+        $response->assertStatus(403);
+
+        $response = $this->actingAs($this->marshall)->put(route('admin.users.update', $this->executor), [
+            'name' => 'Hacker Name',
+            'email' => 'hacked@test.com',
+            'role' => 'Marshall',
+        ]);
+        $response->assertStatus(403);
+
+        // Executor cannot edit user
+        $response = $this->actingAs($this->executor)->get(route('admin.users.edit', $this->marshall));
+        $response->assertStatus(403);
+    }
 }

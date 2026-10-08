@@ -219,6 +219,15 @@
                                             <i class="bi bi-kanban"></i> Plans
                                         </a>
                                     @endif
+                                    @if (! $u->hasRole('Admin') || $u->id === Auth::id())
+                                        <a href="{{ route('admin.users.edit', $u) }}" class="btn btn-sm btn-outline-warning" title="Edit Operative Profile & Reset Key">
+                                            <i class="bi bi-pencil-square"></i> Edit
+                                        </a>
+                                    @else
+                                        <button class="btn btn-sm btn-outline-secondary opacity-50" disabled title="Administrator accounts cannot be modified">
+                                            <i class="bi bi-lock-fill"></i>
+                                        </button>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Role;
 
@@ -30,6 +31,19 @@ class AdminController extends Controller
     {
         if (! Auth::user()->hasRole('Admin')) {
             abort(403, 'Unauthorized. System Administrator access required.');
+        }
+    }
+
+    /**
+     * Ensure the target user can be modified by the administrator.
+     * Administrators cannot modify other administrator accounts.
+     */
+    protected function authorizeModifiableUser(User $targetUser): void
+    {
+        $this->authorizeAdmin();
+
+        if ($targetUser->hasRole('Admin') && $targetUser->id !== Auth::id()) {
+            abort(403, 'Unauthorized. Administrator accounts cannot be modified by other administrators.');
         }
     }
 
@@ -151,6 +165,94 @@ class AdminController extends Controller
             $flashData['created_executor_email'] = $user->email;
             $flashData['created_executor_password'] = $password;
             $flashData['created_executor_must_reset'] = $mustReset;
+        }
+
+        return redirect()->route('admin.index')->with($flashData);
+    }
+
+    /**
+     * Show form for editing an operative user.
+     */
+    public function editUser(User $user): View
+    {
+        $this->authorizeModifiableUser($user);
+
+        $currentRole = $user->roles->first()?->name ?? 'Executor';
+
+        return view('admin.edit-user', [
+            'user' => $user,
+            'currentRole' => $currentRole,
+        ]);
+    }
+
+    /**
+     * Update an operative user profile and optionally reset password.
+     */
+    public function updateUser(Request $request, User $user): RedirectResponse
+    {
+        $this->authorizeModifiableUser($user);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'role' => ['required', 'string', 'in:Marshall,Executor'],
+            'new_password' => ['nullable', 'string', 'min:8', 'max:128'],
+            'force_password_reset' => ['nullable', 'boolean'],
+        ]);
+
+        $cleanEmail = strtolower(trim($validated['email']));
+        $cleanName = trim($validated['name']);
+
+        $updateData = [
+            'name' => $cleanName,
+            'email' => $cleanEmail,
+        ];
+
+        $passwordChanged = false;
+        $plainPassword = null;
+        if (! empty($validated['new_password'])) {
+            $plainPassword = $validated['new_password'];
+            $updateData['password'] = Hash::make($plainPassword);
+            $passwordChanged = true;
+        }
+
+        if ($request->has('force_password_reset')) {
+            $updateData['must_reset_password'] = $request->boolean('force_password_reset');
+        }
+
+        $user->update($updateData);
+
+        // Update role if not admin
+        if (! $user->hasRole('Admin')) {
+            $role = Role::firstOrCreate(['name' => $validated['role']]);
+            $user->syncRoles([$role]);
+        }
+
+        $flashData = [
+            'success' => "Operative account updated successfully for {$user->name} ({$user->email}).",
+        ];
+
+        if ($passwordChanged) {
+            $roleName = $validated['role'];
+            $mustReset = $user->must_reset_password;
+
+            $flashData['created_user_role'] = $roleName;
+            $flashData['created_user_name'] = $user->name;
+            $flashData['created_user_email'] = $user->email;
+            $flashData['created_user_password'] = $plainPassword;
+            $flashData['created_user_must_reset'] = $mustReset;
+
+            if ($roleName === 'Marshall') {
+                $flashData['created_marshall_name'] = $user->name;
+                $flashData['created_marshall_email'] = $user->email;
+                $flashData['created_marshall_password'] = $plainPassword;
+                $flashData['created_marshall_must_reset'] = $mustReset;
+            } else {
+                $flashData['created_executor_name'] = $user->name;
+                $flashData['created_executor_email'] = $user->email;
+                $flashData['created_executor_password'] = $plainPassword;
+                $flashData['created_executor_must_reset'] = $mustReset;
+            }
         }
 
         return redirect()->route('admin.index')->with($flashData);

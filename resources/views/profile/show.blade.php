@@ -52,6 +52,12 @@
                     <span>EXECUTORS DIRECTORY</span>
                 </a>
             @endif
+            @if (Auth::user()->hasRole('Admin') && (! $user->hasRole('Admin') || $isOwnProfile))
+                <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-warning btn-sm font-rajdhani fw-bold d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-pencil-square"></i>
+                    <span>EDIT OPERATIVE</span>
+                </a>
+            @endif
         </div>
     </div>
 
