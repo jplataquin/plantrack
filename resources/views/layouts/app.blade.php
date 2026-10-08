@@ -176,10 +176,18 @@
                                     <div class="d-flex align-items-center gap-2 mb-1">
                                         <i class="bi bi-shield-shaded text-neon-violet fs-4"></i>
                                         <h5 class="font-orbitron fw-bold text-white mb-0">MARSHALL PROVISIONED</h5>
-                                        <span class="badge badge-role-marshall px-2 py-0.5 rounded-pill small">Temporary Key Set</span>
+                                        @if (session('created_marshall_must_reset', true))
+                                            <span class="badge badge-role-marshall px-2 py-0.5 rounded-pill small">Temporary Key Set (Reset Required)</span>
+                                        @else
+                                            <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-50 px-2 py-0.5 rounded-pill small">Active Key (Direct Access)</span>
+                                        @endif
                                     </div>
                                     <p class="text-muted small mb-2">
-                                        Deliver these credentials to the user. They will be required to change their temporary password upon their first login.
+                                        @if (session('created_marshall_must_reset', true))
+                                            Deliver these credentials to the user. They will be required to change their temporary password upon their first login.
+                                        @else
+                                            Deliver these credentials to the user. The operative can sign in directly with this password without being forced to change it.
+                                        @endif
                                     </p>
                                     <div class="d-flex flex-wrap align-items-center gap-3">
                                         <div>
@@ -187,13 +195,13 @@
                                             <strong class="text-white font-monospace ms-1">{{ session('created_marshall_email') }}</strong>
                                         </div>
                                         <div>
-                                            <span class="text-muted small font-rajdhani text-uppercase">Temporary Key:</span>
+                                            <span class="text-muted small font-rajdhani text-uppercase">{{ session('created_marshall_must_reset', true) ? 'Temporary Key:' : 'Access Password:' }}</span>
                                             <code class="px-2 py-1 rounded ms-1 text-neon-yellow" style="background: #17132e; border: 1px solid rgba(255, 230, 0, 0.4); font-size: 1rem;">{{ session('created_marshall_password') }}</code>
                                         </div>
                                     </div>
                                 </div>
                                 <div>
-                                    <button class="btn btn-neon-violet btn-sm d-inline-flex align-items-center gap-2" type="button" onclick="navigator.clipboard.writeText('Email: {{ session('created_marshall_email') }}\nTemporary Password: {{ session('created_marshall_password') }}'); this.innerHTML='<i class=\'bi bi-check-lg\'></i> COPIED!'; setTimeout(() => this.innerHTML='<i class=\'bi bi-clipboard\'></i> COPY CREDENTIALS', 2000);">
+                                    <button class="btn btn-neon-violet btn-sm d-inline-flex align-items-center gap-2" type="button" onclick="navigator.clipboard.writeText(@json("Email: " . session('created_marshall_email') . "\nPassword: " . session('created_marshall_password'))); this.innerHTML='<i class=\'bi bi-check-lg\'></i> COPIED!'; setTimeout(() => this.innerHTML='<i class=\'bi bi-clipboard\'></i> COPY CREDENTIALS', 2000);">
                                         <i class="bi bi-clipboard"></i> COPY CREDENTIALS
                                     </button>
                                 </div>
@@ -210,10 +218,18 @@
                                     <div class="d-flex align-items-center gap-2 mb-1">
                                         <i class="bi bi-shield-check text-neon-cyan fs-4"></i>
                                         <h5 class="font-orbitron fw-bold text-white mb-0">EXECUTOR PROVISIONED</h5>
-                                        <span class="badge badge-role-executor px-2 py-0.5 rounded-pill small">Temporary Key Set</span>
+                                        @if (session('created_executor_must_reset', true))
+                                            <span class="badge badge-role-executor px-2 py-0.5 rounded-pill small">Temporary Key Set (Reset Required)</span>
+                                        @else
+                                            <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-50 px-2 py-0.5 rounded-pill small">Active Key (Direct Access)</span>
+                                        @endif
                                     </div>
                                     <p class="text-muted small mb-2">
-                                        Deliver these credentials to the user. They will be required to change their temporary password upon their first login.
+                                        @if (session('created_executor_must_reset', true))
+                                            Deliver these credentials to the user. They will be required to change their temporary password upon their first login.
+                                        @else
+                                            Deliver these credentials to the user. The operative can sign in directly with this password without being forced to change it.
+                                        @endif
                                     </p>
                                     <div class="d-flex flex-wrap align-items-center gap-3">
                                         <div>
@@ -221,13 +237,13 @@
                                             <strong class="text-white font-monospace ms-1">{{ session('created_executor_email') }}</strong>
                                         </div>
                                         <div>
-                                            <span class="text-muted small font-rajdhani text-uppercase">Temporary Key:</span>
+                                            <span class="text-muted small font-rajdhani text-uppercase">{{ session('created_executor_must_reset', true) ? 'Temporary Key:' : 'Access Password:' }}</span>
                                             <code class="px-2 py-1 rounded ms-1 text-neon-yellow" style="background: #17132e; border: 1px solid rgba(255, 230, 0, 0.4); font-size: 1rem;">{{ session('created_executor_password') }}</code>
                                         </div>
                                     </div>
                                 </div>
                                 <div>
-                                    <button class="btn btn-neon-cyan btn-sm d-inline-flex align-items-center gap-2" type="button" onclick="navigator.clipboard.writeText('Email: {{ session('created_executor_email') }}\nTemporary Password: {{ session('created_executor_password') }}'); this.innerHTML='<i class=\'bi bi-check-lg\'></i> COPIED!'; setTimeout(() => this.innerHTML='<i class=\'bi bi-clipboard\'></i> COPY CREDENTIALS', 2000);">
+                                    <button class="btn btn-neon-cyan btn-sm d-inline-flex align-items-center gap-2" type="button" onclick="navigator.clipboard.writeText(@json("Email: " . session('created_executor_email') . "\nPassword: " . session('created_executor_password'))); this.innerHTML='<i class=\'bi bi-check-lg\'></i> COPIED!'; setTimeout(() => this.innerHTML='<i class=\'bi bi-clipboard\'></i> COPY CREDENTIALS', 2000);">
                                         <i class="bi bi-clipboard"></i> COPY CREDENTIALS
                                     </button>
                                 </div>

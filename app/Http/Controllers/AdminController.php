@@ -104,18 +104,29 @@ class AdminController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'role' => ['required', 'string', 'in:Marshall,Executor'],
             'temporary_password' => ['nullable', 'string', 'min:8', 'max:128'],
+            'force_password_reset' => ['nullable', 'boolean'],
         ]);
 
         $roleName = $validated['role'];
-        $temporaryPassword = ! empty($validated['temporary_password'])
+        $cleanEmail = strtolower(trim($validated['email']));
+        $cleanName = trim($validated['name']);
+
+        $isCustomPassword = ! empty($validated['temporary_password']);
+        $password = $isCustomPassword
             ? $validated['temporary_password']
             : Str::random(10);
 
+        // If force_password_reset was explicitly submitted, respect its boolean value.
+        // If omitted: auto-generated keys require a reset, while custom passwords allow direct login.
+        $mustReset = $request->has('force_password_reset')
+            ? $request->boolean('force_password_reset')
+            : ! $isCustomPassword;
+
         $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($temporaryPassword),
-            'must_reset_password' => true,
+            'name' => $cleanName,
+            'email' => $cleanEmail,
+            'password' => Hash::make($password),
+            'must_reset_password' => $mustReset,
         ]);
 
         $role = Role::firstOrCreate(['name' => $roleName]);
@@ -126,17 +137,20 @@ class AdminController extends Controller
             'created_user_role' => $roleName,
             'created_user_name' => $user->name,
             'created_user_email' => $user->email,
-            'created_user_password' => $temporaryPassword,
+            'created_user_password' => $password,
+            'created_user_must_reset' => $mustReset,
         ];
 
         if ($roleName === 'Marshall') {
             $flashData['created_marshall_name'] = $user->name;
             $flashData['created_marshall_email'] = $user->email;
-            $flashData['created_marshall_password'] = $temporaryPassword;
+            $flashData['created_marshall_password'] = $password;
+            $flashData['created_marshall_must_reset'] = $mustReset;
         } else {
             $flashData['created_executor_name'] = $user->name;
             $flashData['created_executor_email'] = $user->email;
-            $flashData['created_executor_password'] = $temporaryPassword;
+            $flashData['created_executor_password'] = $password;
+            $flashData['created_executor_must_reset'] = $mustReset;
         }
 
         return redirect()->route('admin.index')->with($flashData);

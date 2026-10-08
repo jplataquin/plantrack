@@ -1769,6 +1769,91 @@
         handleAjaxComponentForm('addResourceForm', 'addResourceModal', 'resources-row', 'empty-placeholder-resources', 'resources-tab-count', 'Resource added successfully.');
         handleAjaxComponentForm('addRiskForm', 'addRiskModal', 'risks-row', 'empty-placeholder-risks', 'risks-tab-count', 'Risk Management item added successfully.');
         handleAjaxComponentForm('addBudgetForm', 'addBudgetModal', 'budgets-row', 'empty-placeholder-budgets', 'budgets-tab-count', 'Budget item added successfully.');
+
+        // 11. Component Actual AJAX Updates (Delegated Form Submission)
+        document.addEventListener('submit', async function (e) {
+            const form = e.target.closest('.ajax-actual-form');
+            if (!form) return;
+
+            e.preventDefault();
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const spinner = submitBtn ? submitBtn.querySelector('.spinner-border') : null;
+            const btnText = submitBtn ? submitBtn.querySelector('.btn-text') : null;
+            const originalText = btnText ? btnText.textContent : (submitBtn ? submitBtn.textContent : 'Save');
+
+            if (submitBtn) submitBtn.disabled = true;
+            if (spinner) spinner.classList.remove('d-none');
+            if (btnText) btnText.textContent = 'Saving...';
+
+            const componentType = form.dataset.componentType || 'resource';
+            const componentId = form.dataset.componentId;
+
+            try {
+                const formData = new FormData(form);
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Update actual display
+                    const actualDisplay = document.getElementById(`${componentType}-actual-display-${componentId}`);
+                    if (actualDisplay) {
+                        actualDisplay.textContent = data.actual_with_unit || '—';
+                        if (data.actual !== null && data.actual !== '') {
+                            actualDisplay.classList.remove('text-muted');
+                            actualDisplay.classList.add('text-neon-green');
+                        } else {
+                            actualDisplay.classList.remove('text-neon-green');
+                            actualDisplay.classList.add('text-muted');
+                        }
+                    }
+
+                    // Update date available display (if applicable)
+                    const dateAvailableDisplay = document.getElementById(`${componentType}-date-available-display-${componentId}`);
+                    if (dateAvailableDisplay) {
+                        dateAvailableDisplay.textContent = data.date_available || '—';
+                        if (data.date_available) {
+                            dateAvailableDisplay.classList.remove('text-muted');
+                            dateAvailableDisplay.classList.add('text-neon-green');
+                        } else {
+                            dateAvailableDisplay.classList.remove('text-neon-green');
+                            dateAvailableDisplay.classList.add('text-muted');
+                        }
+                    }
+
+                    // Hide the modal
+                    const modalEl = form.closest('.modal');
+                    if (modalEl && window.bootstrap && window.bootstrap.Modal) {
+                        const modal = window.bootstrap.Modal.getInstance(modalEl) || new window.bootstrap.Modal(modalEl);
+                        modal.hide();
+                    }
+
+                    showToast(data.message || 'Actual accomplished updated successfully.');
+                } else {
+                    let errorMsg = data.message || 'Validation error.';
+                    if (data.errors) {
+                        const messages = Object.values(data.errors).flat();
+                        errorMsg = messages.join(' ');
+                    }
+                    showToast(errorMsg, false);
+                }
+            } catch (err) {
+                showToast('Failed to update actual accomplished: ' + err.message, false);
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
+                if (spinner) spinner.classList.add('d-none');
+                if (btnText) btnText.textContent = originalText;
+            }
+        });
     });
 </script>
 @endsection

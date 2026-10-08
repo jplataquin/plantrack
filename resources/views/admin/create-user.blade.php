@@ -92,42 +92,53 @@
                     @enderror
                 </div>
 
-                <!-- Temporary Password Configuration -->
+                <!-- Password Configuration -->
                 <div class="p-3 rounded mb-4" style="background: rgba(0, 240, 255, 0.04); border: 1px solid rgba(0, 240, 255, 0.2);">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <label for="temporary_password" class="form-label font-rajdhani text-uppercase text-neon-cyan fw-bold mb-0">
-                            <i class="bi bi-key-fill me-1"></i>INITIAL TEMPORARY ACCESS KEY
+                            <i class="bi bi-key-fill me-1"></i>ACCESS KEY / PASSWORD CONFIGURATION
                         </label>
-                        <span class="badge bg-secondary font-monospace" style="font-size: 0.65rem;">ONE-TIME PROVISIONING</span>
+                        <span class="badge bg-secondary font-monospace" style="font-size: 0.65rem;">ACCOUNT PROVISIONING</span>
                     </div>
                     <p class="text-muted small mb-3">
-                        Provide a temporary passphrase or use the randomly generated suggestion below. The user will be required to change this upon their initial sign-in.
+                        Enter a custom password for the operative, or click <strong>Generate</strong> to create an auto-generated temporary key.
                     </p>
 
                     <div class="input-group mb-2">
                         <span class="input-group-text bg-transparent border-secondary text-neon-yellow">
                             <i class="bi bi-shield-lock"></i>
                         </span>
-                        <input type="text" class="form-control font-monospace @error('temporary_password') is-invalid @enderror" id="temporary_password" name="temporary_password" value="{{ old('temporary_password', $suggestedPassword) }}" placeholder="Leave blank to generate random key">
-                        <button type="button" class="btn btn-outline-secondary" onclick="generateRandomKey()" title="Generate new key">
+                        <input type="text" class="form-control font-monospace @error('temporary_password') is-invalid @enderror" id="temporary_password" name="temporary_password" value="{{ old('temporary_password') }}" placeholder="Leave blank to auto-generate random key" autocomplete="new-password">
+                        <button type="button" class="btn btn-outline-secondary" onclick="generateRandomKey()" title="Generate new random key">
                             <i class="bi bi-shuffle"></i> Generate
                         </button>
                         <button type="button" class="btn btn-outline-secondary" onclick="copyTemporaryKey()" title="Copy key to clipboard">
                             <i class="bi bi-clipboard" id="copy-icon"></i>
                         </button>
                     </div>
-                    <small class="text-muted">Minimum 8 characters. Ensure you copy and transmit this key securely to the operative.</small>
+                    <small class="text-muted">Minimum 8 characters. Transmit custom credentials securely to the operative.</small>
                     @error('temporary_password')
                         <div class="invalid-feedback d-block text-neon-pink">{{ $message }}</div>
                     @enderror
+
+                    <!-- Force Reset Toggle -->
+                    <div class="form-check mt-3 pt-2 border-top border-secondary border-opacity-25">
+                        <input class="form-check-input" type="checkbox" name="force_password_reset" id="force_password_reset" value="1" {{ old('force_password_reset', old('temporary_password') ? '' : '1') ? 'checked' : '' }}>
+                        <label class="form-check-label text-white small font-rajdhani fw-bold" for="force_password_reset">
+                            <i class="bi bi-shield-exclamation text-neon-yellow me-1"></i> REQUIRE PASSWORD RESET UPON FIRST SIGN-IN
+                        </label>
+                        <small class="text-muted d-block" style="font-size: 0.75rem;">
+                            Uncheck if setting a custom password so the operative can log in directly without being redirected to the password reset screen.
+                        </small>
+                    </div>
                 </div>
 
-                <!-- Mandatory Policy Notice -->
+                <!-- Policy Information Notice -->
                 <div class="alert alert-dark d-flex align-items-center gap-3 mb-4" style="background: rgba(255, 230, 0, 0.06); border: 1px solid rgba(255, 230, 0, 0.3); color: #ffffff;">
-                    <i class="bi bi-exclamation-triangle-fill text-neon-yellow fs-3"></i>
+                    <i class="bi bi-info-circle-fill text-neon-cyan fs-3"></i>
                     <div class="small">
-                        <strong class="text-neon-yellow d-block font-rajdhani text-uppercase">Automated Enforcement Policy:</strong>
-                        The flag <code class="text-neon-cyan">must_reset_password</code> will be activated for this account. The user will be automatically redirected to configure a secure permanent passphrase before accessing any module of PlanTrack.
+                        <strong class="text-neon-cyan d-block font-rajdhani text-uppercase">Account Security Policy:</strong>
+                        When password reset is enforced, the operative will be prompted to choose a permanent passphrase upon initial authentication. When disabled, the provided custom credentials grant direct system access.
                     </div>
                 </div>
 
@@ -171,6 +182,10 @@ function generateRandomKey() {
         key += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     document.getElementById('temporary_password').value = key;
+    const forceResetCheckbox = document.getElementById('force_password_reset');
+    if (forceResetCheckbox) {
+        forceResetCheckbox.checked = true;
+    }
 }
 
 function copyTemporaryKey() {

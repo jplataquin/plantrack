@@ -44,7 +44,7 @@
                 <div class="d-flex justify-content-between align-items-center small mb-1">
                     <span class="text-muted"><i class="bi bi-check2-all me-1 text-neon-green"></i>Actual:</span>
                     <div class="d-flex align-items-center gap-1">
-                        <strong class="{{ $res->actual !== null && $res->actual !== '' ? 'text-neon-green' : 'text-muted' }}">
+                        <strong class="{{ $res->actual !== null && $res->actual !== '' ? 'text-neon-green' : 'text-muted' }}" id="resource-actual-display-{{ $res->id }}">
                             {{ $res->actual_with_unit }}
                         </strong>
                         @if ($isMarshall || $plan->status === 'Open')
@@ -68,7 +68,7 @@
                 </div>
                 <div class="d-flex justify-content-between align-items-center small">
                     <span class="text-muted"><i class="bi bi-calendar-check me-1 text-neon-green"></i>Date Available:</span>
-                    <strong class="{{ $res->date_available ? 'text-neon-green' : 'text-muted' }}">
+                    <strong class="{{ $res->date_available ? 'text-neon-green' : 'text-muted' }}" id="resource-date-available-display-{{ $res->id }}">
                         {{ $res->date_available ? $res->date_available->format('M d, Y') : '—' }}
                     </strong>
                 </div>
@@ -111,7 +111,7 @@
 <!-- Modal for Filling / Updating Resource Actual Accomplished -->
 <div class="modal fade" id="editResourceActualModal-{{ $res->id }}" tabindex="-1" aria-labelledby="editResourceActualModalLabel-{{ $res->id }}" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered component-modal-dialog">
-        <form action="{{ route('resources.actual.update', $res) }}" method="POST">
+        <form action="{{ route('resources.actual.update', $res) }}" method="POST" class="ajax-actual-form" data-component-type="resource" data-component-id="{{ $res->id }}">
             @csrf
             @method('PATCH')
             <div class="modal-content" style="background: #120f24; border: 1px solid var(--neon-orange); box-shadow: 0 0 20px rgba(255, 107, 0, 0.2);">
@@ -139,7 +139,10 @@
                 </div>
                 <div class="modal-footer border-top border-secondary py-2 px-3 d-flex justify-content-between">
                     <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-sm btn-neon-orange px-3 font-rajdhani fw-bold">SAVE ACTUAL</button>
+                    <button type="submit" class="btn btn-sm btn-neon-orange px-3 font-rajdhani fw-bold">
+                        <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                        <span class="btn-text">SAVE ACTUAL</span>
+                    </button>
                 </div>
             </div>
         </form>

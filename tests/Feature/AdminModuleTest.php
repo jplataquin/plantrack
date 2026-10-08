@@ -164,6 +164,7 @@ class AdminModuleTest extends TestCase
             'email' => 'captain@test.com',
             'role' => 'Marshall',
             'temporary_password' => 'TemporaryPass123!',
+            'force_password_reset' => 0,
         ]);
 
         $response->assertRedirect(route('admin.index'));
@@ -171,13 +172,56 @@ class AdminModuleTest extends TestCase
         $response->assertSessionHas('created_marshall_name', 'New Captain Marshall');
         $response->assertSessionHas('created_marshall_email', 'captain@test.com');
         $response->assertSessionHas('created_marshall_password', 'TemporaryPass123!');
+        $response->assertSessionHas('created_marshall_must_reset', false);
 
         $newMarshall = User::where('email', 'captain@test.com')->first();
         $this->assertNotNull($newMarshall);
         $this->assertEquals('New Captain Marshall', $newMarshall->name);
         $this->assertTrue($newMarshall->hasRole('Marshall'));
-        $this->assertTrue($newMarshall->must_reset_password);
+        $this->assertFalse($newMarshall->must_reset_password);
         $this->assertTrue(Hash::check('TemporaryPass123!', $newMarshall->password));
+
+        // Marshall authenticates directly via login screen
+        auth()->logout();
+        $loginResponse = $this->post('/login', [
+            'email' => 'captain@test.com',
+            'password' => 'TemporaryPass123!',
+        ]);
+
+        $loginResponse->assertRedirect('/home');
+        $this->assertAuthenticatedAs($newMarshall);
+
+        // Accessing main route does not redirect to password reset
+        $indexResponse = $this->actingAs($newMarshall)->get(route('executors.index'));
+        $indexResponse->assertStatus(200);
+    }
+
+    public function test_admin_can_provision_marshall_with_custom_password_and_enforce_reset(): void
+    {
+        $response = $this->actingAs($this->admin)->post(route('admin.users.store'), [
+            'name' => 'Reset Enforced Marshall',
+            'email' => 'reset.enforced@test.com',
+            'role' => 'Marshall',
+            'temporary_password' => 'EnforcedPass99!',
+            'force_password_reset' => 1,
+        ]);
+
+        $response->assertRedirect(route('admin.index'));
+        $newMarshall = User::where('email', 'reset.enforced@test.com')->first();
+        $this->assertNotNull($newMarshall);
+        $this->assertTrue($newMarshall->must_reset_password);
+
+        // Marshall authenticates
+        auth()->logout();
+        $loginResponse = $this->post('/login', [
+            'email' => 'reset.enforced@test.com',
+            'password' => 'EnforcedPass99!',
+        ]);
+        $loginResponse->assertRedirect('/home');
+
+        // Middleware redirects to password reset
+        $indexResponse = $this->actingAs($newMarshall)->get(route('executors.index'));
+        $indexResponse->assertRedirect(route('password.force_reset'));
     }
 
     public function test_admin_can_provision_marshall_user_with_auto_generated_password(): void
@@ -208,6 +252,7 @@ class AdminModuleTest extends TestCase
             'name' => 'Field Operative Alpha',
             'email' => 'alpha@test.com',
             'temporary_password' => 'AlphaKeySecret99!',
+            'force_password_reset' => 0,
         ]);
 
         $response->assertRedirect(route('admin.index'));
@@ -219,17 +264,18 @@ class AdminModuleTest extends TestCase
         $newExecutor = User::where('email', 'alpha@test.com')->first();
         $this->assertNotNull($newExecutor);
         $this->assertTrue($newExecutor->hasRole('Executor'));
-        $this->assertTrue($newExecutor->must_reset_password);
+        $this->assertFalse($newExecutor->must_reset_password);
         $this->assertTrue(Hash::check('AlphaKeySecret99!', $newExecutor->password));
     }
 
     public function test_provisioned_marshall_must_reset_password_on_first_login(): void
     {
-        // Admin provisions Marshall
+        // Admin provisions Marshall with explicit forced reset
         $this->actingAs($this->admin)->post(route('admin.marshalls.store'), [
             'name' => 'Enforced Reset Marshall',
             'email' => 'enforced@test.com',
             'temporary_password' => 'TempSecret888',
+            'force_password_reset' => 1,
         ]);
 
         $marshall = User::where('email', 'enforced@test.com')->first();
