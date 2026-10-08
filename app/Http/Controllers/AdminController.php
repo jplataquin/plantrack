@@ -36,14 +36,14 @@ class AdminController extends Controller
 
     /**
      * Ensure the target user can be modified by the administrator.
-     * Administrators cannot modify other administrator accounts.
+     * Administrators cannot modify administrator accounts.
      */
     protected function authorizeModifiableUser(User $targetUser): void
     {
         $this->authorizeAdmin();
 
-        if ($targetUser->hasRole('Admin') && $targetUser->id !== Auth::id()) {
-            abort(403, 'Unauthorized. Administrator accounts cannot be modified by other administrators.');
+        if ($targetUser->hasRole('Admin')) {
+            abort(403, 'Unauthorized. Administrator accounts cannot be modified.');
         }
     }
 
@@ -54,7 +54,9 @@ class AdminController extends Controller
     {
         $this->authorizeAdmin();
 
-        $query = User::with(['roles'])->withCount('planRecords');
+        $query = User::with(['roles'])
+            ->withCount('planRecords')
+            ->where('id', '!=', Auth::id());
 
         // Filter by role
         if ($request->filled('role')) {

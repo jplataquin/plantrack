@@ -219,7 +219,7 @@
                                             <i class="bi bi-kanban"></i> Plans
                                         </a>
                                     @endif
-                                    @if (! $u->hasRole('Admin') || $u->id === Auth::id())
+                                    @if (! $u->hasRole('Admin'))
                                         <a href="{{ route('admin.users.edit', $u) }}" class="btn btn-sm btn-outline-warning" title="Edit Operative Profile & Reset Key">
                                             <i class="bi bi-pencil-square"></i> Edit
                                         </a>

@@ -329,6 +329,20 @@ class AdminModuleTest extends TestCase
         $response->assertSee('Admin Console');
     }
 
+    public function test_admin_console_excludes_current_logged_in_admin_from_user_list(): void
+    {
+        $response = $this->actingAs($this->admin)->get(route('admin.index'));
+        $response->assertStatus(200);
+
+        /** @var \Illuminate\Pagination\LengthAwarePaginator $users */
+        $users = $response->viewData('users');
+        $userIds = $users->pluck('id')->all();
+
+        $this->assertNotContains($this->admin->id, $userIds);
+        $this->assertContains($this->marshall->id, $userIds);
+        $this->assertContains($this->executor->id, $userIds);
+    }
+
     public function test_admin_can_view_edit_user_page_for_non_admin_operatives(): void
     {
         $response = $this->actingAs($this->admin)->get(route('admin.users.edit', $this->marshall));
@@ -338,8 +352,9 @@ class AdminModuleTest extends TestCase
         $response->assertSee($this->marshall->email);
     }
 
-    public function test_admin_cannot_view_edit_page_for_another_admin(): void
+    public function test_admin_cannot_view_edit_page_for_any_admin(): void
     {
+        // Cannot view edit page for another admin
         $otherAdmin = User::factory()->create([
             'email' => 'otheradmin@test.com',
             'must_reset_password' => false,
@@ -348,6 +363,38 @@ class AdminModuleTest extends TestCase
 
         $response = $this->actingAs($this->admin)->get(route('admin.users.edit', $otherAdmin));
         $response->assertStatus(403);
+
+        // Cannot view edit page for themselves via admin user edit route
+        $selfResponse = $this->actingAs($this->admin)->get(route('admin.users.edit', $this->admin));
+        $selfResponse->assertStatus(403);
+    }
+
+    public function test_admin_cannot_update_any_admin(): void
+    {
+        // Cannot update another admin
+        $otherAdmin = User::factory()->create([
+            'email' => 'secureadmin@test.com',
+            'must_reset_password' => false,
+        ]);
+        $otherAdmin->assignRole('Admin');
+
+        $response = $this->actingAs($this->admin)->put(route('admin.users.update', $otherAdmin), [
+            'name' => 'Attempted Overwrite',
+            'email' => 'overwritten@test.com',
+            'role' => 'Executor',
+            'new_password' => 'HackedPassword123!',
+        ]);
+
+        $response->assertStatus(403);
+        $this->assertEquals('secureadmin@test.com', $otherAdmin->fresh()->email);
+
+        // Cannot update themselves via admin users update route
+        $selfUpdateResponse = $this->actingAs($this->admin)->put(route('admin.users.update', $this->admin), [
+            'name' => 'Self Change',
+            'email' => 'selfchange@test.com',
+            'role' => 'Executor',
+        ]);
+        $selfUpdateResponse->assertStatus(403);
     }
 
     public function test_admin_can_update_operative_profile_and_role(): void
@@ -424,25 +471,6 @@ class AdminModuleTest extends TestCase
 
         $navResponse = $this->actingAs($updatedMarshall)->get(route('executors.index'));
         $navResponse->assertRedirect(route('password.force_reset'));
-    }
-
-    public function test_admin_cannot_update_another_admin(): void
-    {
-        $otherAdmin = User::factory()->create([
-            'email' => 'secureadmin@test.com',
-            'must_reset_password' => false,
-        ]);
-        $otherAdmin->assignRole('Admin');
-
-        $response = $this->actingAs($this->admin)->put(route('admin.users.update', $otherAdmin), [
-            'name' => 'Attempted Overwrite',
-            'email' => 'overwritten@test.com',
-            'role' => 'Executor',
-            'new_password' => 'HackedPassword123!',
-        ]);
-
-        $response->assertStatus(403);
-        $this->assertEquals('secureadmin@test.com', $otherAdmin->fresh()->email);
     }
 
     public function test_non_admin_cannot_access_edit_or_update_user(): void
