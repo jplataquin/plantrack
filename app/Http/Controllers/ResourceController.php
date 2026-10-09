@@ -41,7 +41,7 @@ class ResourceController extends Controller
         $validated = $request->validate([
             'description' => 'required|string',
             'quantity' => 'required|string|max:100',
-            'actual' => 'nullable|string|max:100',
+            'actual' => 'nullable|numeric',
             'unit' => 'nullable|string|max:50',
             'for' => [
                 'nullable',
@@ -177,7 +177,7 @@ class ResourceController extends Controller
         }
 
         $rules = [
-            'actual' => 'nullable|string|max:100',
+            'actual' => 'nullable|numeric',
             'date_available' => 'nullable|date',
         ];
 
@@ -186,6 +186,10 @@ class ResourceController extends Controller
         }
 
         $validated = $request->validate($rules);
+
+        if (array_key_exists('actual', $validated) && $validated['actual'] === '') {
+            $validated['actual'] = null;
+        }
 
         $resource->update($validated);
 

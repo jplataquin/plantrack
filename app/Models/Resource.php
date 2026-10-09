@@ -79,6 +79,29 @@ class Resource extends Model
         return $this->belongsTo(TargetObjective::class, 'target_objective_id');
     }
 
+    public function setActualAttribute($value): void
+    {
+        if ($value === null || $value === '') {
+            $this->attributes['actual'] = null;
+            return;
+        }
+
+        if (! is_numeric($value)) {
+            throw new \InvalidArgumentException('The actual field must be numeric.');
+        }
+
+        $this->attributes['actual'] = $value + 0;
+    }
+
+    public function getActualAttribute($value)
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return is_numeric($value) ? $value + 0 : $value;
+    }
+
     public function getQuantityWithUnitAttribute(): string
     {
         return $this->quantity.($this->unit ? ' '.$this->unit : '');

@@ -93,7 +93,7 @@ class TargetObjectiveController extends Controller
         }
 
         $rules = [
-            'actual' => 'nullable|string|max:100',
+            'actual' => 'nullable|numeric',
         ];
 
         if ($user->hasAnyRole(['Marshall', 'Admin'])) {
@@ -101,6 +101,10 @@ class TargetObjectiveController extends Controller
         }
 
         $validated = $request->validate($rules);
+
+        if (array_key_exists('actual', $validated) && $validated['actual'] === '') {
+            $validated['actual'] = null;
+        }
 
         $targetObjective->update($validated);
 

@@ -128,7 +128,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted small font-rajdhani text-uppercase">ACTUAL DELIVERED / USED</label>
-                        <input type="text" name="actual" class="form-control" value="{{ $res->actual }}" placeholder="e.g. 3, 22000" autocomplete="off">
+                        <input type="number" step="any" name="actual" class="form-control" value="{{ $res->actual }}" placeholder="e.g. 3, 22000" autocomplete="off">
                         <small class="text-muted" style="font-size: 0.7rem;">Enter actual delivered output or expenditure.</small>
                     </div>
                     <div class="mb-3">

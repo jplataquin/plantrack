@@ -345,9 +345,10 @@ class DatabaseSeeder extends Seeder
             ['description' => 'Safely archive 15TB of cold audit logs to encrypted Glacier Deep Archive.'],
             [
                 'user_id' => $marshall->id,
-                'quantity' => '15 TB',
+                'quantity' => '15',
+                'unit' => 'TB',
                 'priority' => 'critical',
-                'actual' => '15 TB',
+                'actual' => '15',
                 'status' => 'Hit',
             ]
         );
@@ -356,9 +357,10 @@ class DatabaseSeeder extends Seeder
             ['description' => 'Power down and securely wipe 18 legacy bare-metal server racks.'],
             [
                 'user_id' => $marshall->id,
-                'quantity' => '18 Racks',
+                'quantity' => '18',
+                'unit' => 'Racks',
                 'priority' => 'high',
-                'actual' => '18 Racks',
+                'actual' => '18',
                 'status' => 'Hit',
             ]
         );

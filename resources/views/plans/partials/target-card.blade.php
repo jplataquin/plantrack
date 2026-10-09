@@ -101,7 +101,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted small font-rajdhani text-uppercase">ACTUAL QUANTITY ACCOMPLISHED</label>
-                        <input type="text" name="actual" class="form-control" value="{{ $target->actual }}" placeholder="e.g. 95" autocomplete="off">
+                        <input type="number" step="any" name="actual" class="form-control" value="{{ $target->actual }}" placeholder="e.g. 95" autocomplete="off">
                         <small class="text-muted" style="font-size: 0.7rem;">Enter actual output or quantity delivered.</small>
                     </div>
                 </div>

@@ -35,7 +35,7 @@ class BudgetController extends Controller
         $validated = $request->validate([
             'description' => 'required|string',
             'quantity' => 'required|numeric|min:0',
-            'actual' => 'nullable|string|max:100',
+            'actual' => 'nullable|numeric',
             'unit' => 'nullable|string|max:50',
             'for' => [
                 'nullable',
@@ -113,7 +113,7 @@ class BudgetController extends Controller
         $validated = $request->validate([
             'description' => 'required|string',
             'quantity' => 'required|numeric|min:0',
-            'actual' => 'nullable|string|max:100',
+            'actual' => 'nullable|numeric',
             'unit' => 'nullable|string|max:50',
             'for' => [
                 'nullable',
@@ -159,11 +159,11 @@ class BudgetController extends Controller
         }
 
         $validated = $request->validate([
-            'actual' => 'nullable|string|max:100',
+            'actual' => 'nullable|numeric',
         ]);
 
         $budget->update([
-            'actual' => $validated['actual'] !== '' ? $validated['actual'] : null,
+            'actual' => ($validated['actual'] !== '' && $validated['actual'] !== null) ? $validated['actual'] : null,
         ]);
 
         if ($request->wantsJson()) {

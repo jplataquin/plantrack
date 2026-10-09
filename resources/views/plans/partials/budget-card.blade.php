@@ -126,7 +126,7 @@
                             Actual Quantity Spent / Delivered
                         </label>
                         <div class="input-group">
-                            <input type="text" name="actual" class="form-control" placeholder="e.g., 4500, 3, Completed" value="{{ old('actual', $budget->actual) }}" autofocus>
+                            <input type="number" step="any" name="actual" class="form-control" placeholder="e.g., 4500, 3" value="{{ old('actual', $budget->actual) }}" autofocus>
                             @if ($budget->unit)
                                 <span class="input-group-text bg-dark text-white border-secondary">{{ $budget->unit }}</span>
                             @endif
@@ -175,7 +175,7 @@
 
                     <div class="mb-3">
                         <label class="form-label text-neon-green small font-rajdhani text-uppercase">ACTUAL QUANTITY (OPTIONAL)</label>
-                        <input type="text" name="actual" class="form-control" value="{{ old('actual', $budget->actual) }}" placeholder="e.g., 5000">
+                        <input type="number" step="any" name="actual" class="form-control" value="{{ old('actual', $budget->actual) }}" placeholder="e.g., 5000">
                     </div>
 
                     <div class="mb-3">
