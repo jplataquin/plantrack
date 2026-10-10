@@ -33,7 +33,7 @@ class PlanRecordController extends Controller
             'resources',
             'riskManagements',
             'budgets',
-        ])->latest();
+        ])->orderBy('start_date', 'desc')->latest('id');
 
         // Filter by Project
         if ($request->filled('project_id')) {
@@ -89,7 +89,7 @@ class PlanRecordController extends Controller
 
         $query = $executor->planRecords()
             ->with(['targetObjectives', 'resources', 'riskManagements', 'budgets'])
-            ->latest();
+            ->orderBy('start_date', 'desc')->latest('id');
 
         // Status filter
         if ($request->filled('status')) {

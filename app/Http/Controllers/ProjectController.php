@@ -98,7 +98,10 @@ class ProjectController extends Controller
      */
     public function show(Project $project): View
     {
-        $project->load(['planRecords.executor']);
+        $project->load([
+            'planRecords' => fn ($q) => $q->orderBy('start_date', 'desc')->latest('id'),
+            'planRecords.executor',
+        ]);
         $isMarshall = Auth::user()->hasAnyRole(['Marshall', 'Admin']);
 
         return view('projects.show', compact('project', 'isMarshall'));

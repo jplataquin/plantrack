@@ -234,4 +234,130 @@ class PlansPageTest extends TestCase
         $response->assertSee('Quantum Encryption Protocol');
         $response->assertDontSee('Database Backup Sync');
     }
+
+    public function test_plans_are_ordered_in_descending_order_by_start_date(): void
+    {
+        // Create records out of start_date order to ensure created_at/id order is not being used
+        $planMid = PlanRecord::create([
+            'title' => 'Middle Date Plan',
+            'executor_id' => $this->executor1->id,
+            'project_id' => $this->projectA->id,
+            'status' => 'Open',
+            'start_date' => '2026-05-15',
+            'end_date' => '2026-05-30',
+        ]);
+
+        $planEarliest = PlanRecord::create([
+            'title' => 'Earliest Date Plan',
+            'executor_id' => $this->executor1->id,
+            'project_id' => $this->projectA->id,
+            'status' => 'Open',
+            'start_date' => '2026-01-10',
+            'end_date' => '2026-01-25',
+        ]);
+
+        $planLatest = PlanRecord::create([
+            'title' => 'Latest Date Plan',
+            'executor_id' => $this->executor1->id,
+            'project_id' => $this->projectA->id,
+            'status' => 'Open',
+            'start_date' => '2026-10-01',
+            'end_date' => '2026-10-20',
+        ]);
+
+        $response = $this->actingAs($this->marshall)->get(route('plans.index'));
+
+        $response->assertStatus(200);
+        $response->assertSeeInOrder([
+            'Latest Date Plan',
+            'Middle Date Plan',
+            'Earliest Date Plan',
+        ]);
+
+        $plans = $response->viewData('plans');
+        $this->assertEquals(
+            ['Latest Date Plan', 'Middle Date Plan', 'Earliest Date Plan'],
+            $plans->pluck('title')->all()
+        );
+    }
+
+    public function test_plans_with_same_start_date_are_ordered_by_latest_id_tiebreaker(): void
+    {
+        $planFirst = PlanRecord::create([
+            'title' => 'Same Date Plan First Created',
+            'executor_id' => $this->executor1->id,
+            'project_id' => $this->projectA->id,
+            'status' => 'Open',
+            'start_date' => '2026-07-01',
+            'end_date' => '2026-07-15',
+        ]);
+
+        $planSecond = PlanRecord::create([
+            'title' => 'Same Date Plan Second Created',
+            'executor_id' => $this->executor1->id,
+            'project_id' => $this->projectA->id,
+            'status' => 'Open',
+            'start_date' => '2026-07-01',
+            'end_date' => '2026-07-15',
+        ]);
+
+        $response = $this->actingAs($this->marshall)->get(route('plans.index'));
+
+        $response->assertStatus(200);
+        $response->assertSeeInOrder([
+            'Same Date Plan Second Created',
+            'Same Date Plan First Created',
+        ]);
+
+        $plans = $response->viewData('plans');
+        $this->assertEquals(
+            ['Same Date Plan Second Created', 'Same Date Plan First Created'],
+            $plans->pluck('title')->all()
+        );
+    }
+
+    public function test_executor_show_page_orders_plans_in_descending_order_by_start_date(): void
+    {
+        $planMid = PlanRecord::create([
+            'title' => 'Executor Mid Date Plan',
+            'executor_id' => $this->executor1->id,
+            'project_id' => $this->projectA->id,
+            'status' => 'Open',
+            'start_date' => '2026-05-15',
+            'end_date' => '2026-05-30',
+        ]);
+
+        $planEarliest = PlanRecord::create([
+            'title' => 'Executor Earliest Date Plan',
+            'executor_id' => $this->executor1->id,
+            'project_id' => $this->projectA->id,
+            'status' => 'Open',
+            'start_date' => '2026-01-10',
+            'end_date' => '2026-01-25',
+        ]);
+
+        $planLatest = PlanRecord::create([
+            'title' => 'Executor Latest Date Plan',
+            'executor_id' => $this->executor1->id,
+            'project_id' => $this->projectA->id,
+            'status' => 'Open',
+            'start_date' => '2026-10-01',
+            'end_date' => '2026-10-20',
+        ]);
+
+        $response = $this->actingAs($this->marshall)->get(route('executors.show', $this->executor1));
+
+        $response->assertStatus(200);
+        $response->assertSeeInOrder([
+            'Executor Latest Date Plan',
+            'Executor Mid Date Plan',
+            'Executor Earliest Date Plan',
+        ]);
+
+        $plans = $response->viewData('plans');
+        $this->assertEquals(
+            ['Executor Latest Date Plan', 'Executor Mid Date Plan', 'Executor Earliest Date Plan'],
+            $plans->pluck('title')->all()
+        );
+    }
 }

@@ -186,7 +186,8 @@ class ProfileController extends Controller
 
         $assignedPlans = $user->planRecords()
             ->with(['project', 'targetObjectives', 'resources', 'riskManagements', 'budgets'])
-            ->latest()
+            ->orderBy('start_date', 'desc')
+            ->latest('id')
             ->get();
 
         $assignedPlansCount = $assignedPlans->count();
