@@ -208,6 +208,7 @@ class AdminController extends Controller
         $updateData = [
             'name' => $cleanName,
             'email' => $cleanEmail,
+            'must_reset_password' => $request->boolean('force_password_reset'),
         ];
 
         $passwordChanged = false;
@@ -216,10 +217,6 @@ class AdminController extends Controller
             $plainPassword = $validated['new_password'];
             $updateData['password'] = Hash::make($plainPassword);
             $passwordChanged = true;
-        }
-
-        if ($request->has('force_password_reset')) {
-            $updateData['must_reset_password'] = $request->boolean('force_password_reset');
         }
 
         $user->update($updateData);

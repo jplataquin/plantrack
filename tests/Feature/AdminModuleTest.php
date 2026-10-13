@@ -417,12 +417,15 @@ class AdminModuleTest extends TestCase
 
     public function test_admin_can_reset_operative_password_with_direct_login(): void
     {
+        // Marshall starts with pending reset required (e.g. provisioned with temporary key)
+        $this->marshall->update(['must_reset_password' => true]);
+
+        // Browser form submission omits 'force_password_reset' when unchecked
         $response = $this->actingAs($this->admin)->put(route('admin.users.update', $this->marshall), [
             'name' => $this->marshall->name,
             'email' => $this->marshall->email,
             'role' => 'Marshall',
             'new_password' => 'NewResetPass123!',
-            'force_password_reset' => 0,
         ]);
 
         $response->assertRedirect(route('admin.index'));
@@ -442,6 +445,26 @@ class AdminModuleTest extends TestCase
         ]);
         $loginResponse->assertRedirect('/home');
         $this->assertAuthenticatedAs($updatedMarshall);
+
+        // Accessing main route does not redirect to password reset
+        $indexResponse = $this->actingAs($updatedMarshall)->get(route('executors.index'));
+        $indexResponse->assertStatus(200);
+    }
+
+    public function test_admin_can_clear_pending_password_reset_flag_without_changing_password(): void
+    {
+        $this->marshall->update(['must_reset_password' => true]);
+
+        // Submit edit form with force_password_reset omitted (unchecked) and no new_password
+        $response = $this->actingAs($this->admin)->put(route('admin.users.update', $this->marshall), [
+            'name' => $this->marshall->name,
+            'email' => $this->marshall->email,
+            'role' => 'Marshall',
+            'new_password' => '',
+        ]);
+
+        $response->assertRedirect(route('admin.index'));
+        $this->assertFalse($this->marshall->fresh()->must_reset_password);
     }
 
     public function test_admin_can_reset_operative_password_with_enforced_reset(): void
