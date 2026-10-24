@@ -340,10 +340,10 @@
                                 @endif
                             </div>
                         @empty
-                            <div class="text-center py-5 border border-dashed border-secondary rounded empty-remarks-placeholder">
-                                <i class="bi bi-chat-square-text text-muted fs-1 mb-2 d-block"></i>
-                                <span class="text-muted font-rajdhani">NO REMARKS RECORDED YET</span>
-                                <small class="text-muted d-block">Start the budget discussion using the console below.</small>
+                            <div class="text-center py-5 text-muted remarks-empty-state">
+                                <i class="bi bi-chat-square-text fs-1 text-neon-yellow d-block mb-2"></i>
+                                <h5 class="text-white font-orbitron">NO REMARKS RECORDED</h5>
+                                <p class="small">Start the budget discussion using the console below.</p>
                             </div>
                         @endforelse
                     </div>
@@ -353,48 +353,58 @@
             <!-- Sticky Bottom Remark Composer Form -->
             <div class="modal-footer px-3 px-md-4 py-3 border-top border-secondary w-100" style="background: #120f24;">
                 <div class="w-100 d-flex flex-column align-items-center">
-                    <form action="{{ route('comments.store') }}" method="POST" class="w-100 ajax-remark-form" enctype="multipart/form-data">
-                        @csrf
-                        <input type="hidden" name="commentable_type" value="App\Models\Budget">
-                        <input type="hidden" name="commentable_id" value="{{ $budget->id }}">
-                        <input type="hidden" name="thread_key" value="budget-{{ $budget->id }}">
+                    @if ($isMarshall || $plan->status === 'Open')
+                        <form action="{{ route('comments.store') }}" method="POST" class="w-100 remark-form d-flex flex-column align-items-center">
+                            @csrf
+                            <input type="hidden" name="commentable_type" value="budget">
+                            <input type="hidden" name="commentable_id" value="{{ $budget->id }}">
+                            <div class="staged-attachment-ids-container w-100"></div>
 
-                        <div class="mb-2 w-100 d-flex justify-content-center">
-                            <textarea name="body" class="form-control custom-scrollbar remark-body-textarea remark-input w-100" rows="3" placeholder="Write a budget remark or update..." required style="background: #0a0814; color: #fff; border-color: rgba(255, 230, 0, 0.3); resize: none; width: 100% !important;"></textarea>
-                        </div>
-
-                        <!-- Staged Attachments Preview Container -->
-                        <div class="remark-staged-container mb-2 d-none w-100">
-                            <div class="small text-muted font-rajdhani mb-1 d-flex justify-content-between align-items-center">
-                                <span><i class="bi bi-paperclip text-neon-yellow me-1"></i>STAGED ATTACHMENTS (<span class="staged-count">0</span>)</span>
-                                <small style="font-size: 0.68rem;">Chunk upload on submit</small>
-                            </div>
-                            <div class="staged-items-list d-flex flex-wrap gap-2"></div>
-                            <!-- Upload Progress Bar -->
-                            <div class="staged-upload-progress mt-2 d-none">
-                                <div class="d-flex justify-content-between small text-muted mb-1" style="font-size: 0.72rem;">
-                                    <span class="upload-status-text">Uploading chunks...</span>
-                                    <span class="upload-percent-text font-orbitron text-neon-yellow">0%</span>
+                            <!-- Staged Attachments Container (Up to 5 files) -->
+                            <div class="remark-staged-container d-none mb-2 p-2 rounded w-100" style="background: rgba(255, 230, 0, 0.05); border: 1px dashed rgba(255, 230, 0, 0.4);">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <small class="text-neon-yellow font-rajdhani fw-bold text-uppercase">
+                                        <i class="bi bi-paperclip me-1"></i>STAGED ATTACHMENTS (<span class="staged-count">0</span>/5)
+                                    </small>
+                                    <small class="text-muted" style="font-size: 0.7rem;">Max 5 files &bull; Max 5MB each</small>
                                 </div>
-                                <div class="progress" style="height: 5px; background: rgba(255, 255, 255, 0.1);">
-                                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%; background: #ffe600;"></div>
+                                <div class="staged-items-list d-flex flex-column gap-1"></div>
+                            </div>
+
+                            <!-- Chunk Upload Progress Bar -->
+                            <div class="remark-upload-progress d-none mb-2 w-100">
+                                <div class="d-flex justify-content-between align-items-center small mb-1">
+                                    <span class="text-neon-yellow progress-status-text"><i class="bi bi-arrow-repeat spin me-1"></i>Uploading chunk to staging...</span>
+                                    <span class="text-white fw-bold progress-percent-text">0%</span>
+                                </div>
+                                <div class="progress" style="height: 6px; background-color: rgba(255, 255, 255, 0.1);">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" role="progressbar" style="width: 0%; background-color: #ffe600 !important;"></div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="d-flex align-items-center justify-content-between gap-2 w-100">
-                            <div>
-                                <input type="file" multiple class="d-none remark-file-input">
-                                <button type="button" class="btn btn-sm btn-outline-secondary attach-btn">
-                                    <i class="bi bi-paperclip me-1"></i><span class="attach-btn-label">Attach Files</span>
-                                </button>
-                                <small class="text-muted ms-2 d-none d-md-inline" style="font-size: 0.72rem;">Images, PDF, Docs up to 25MB</small>
+                            <div class="mb-2 w-100 d-flex justify-content-center">
+                                <textarea name="body" class="form-control custom-scrollbar remark-body-textarea w-100" rows="3" placeholder="Write a budget remark or update..." required></textarea>
                             </div>
-                            <button type="submit" class="btn btn-neon-yellow btn-sm submit-remark-btn px-4 fw-bold font-rajdhani" style="color: #000000 !important;">
-                                <i class="bi bi-send-fill me-1"></i>POST REMARK
-                            </button>
+                            <div class="d-flex justify-content-between align-items-center gap-2 w-100">
+                                <label class="btn btn-neon-outline-yellow d-flex align-items-center gap-1 mb-0 px-3 cursor-pointer remark-attach-btn" title="Attach up to 5 files (Max 5MB each)">
+                                    <i class="bi bi-paperclip"></i>
+                                    <span class="attach-btn-label">Attach files</span>
+                                    <input type="file" class="d-none remark-file-input" multiple>
+                                </label>
+                                <div class="d-flex align-items-center gap-2">
+                                    <small class="text-muted d-none d-sm-inline font-monospace" style="font-size: 0.75rem;">Ctrl+Enter to post</small>
+                                    <button type="submit" class="btn btn-neon-yellow px-4 font-rajdhani fw-bold" style="color: #000000 !important;">
+                                        <i class="bi bi-send-fill me-1"></i> POST REMARK
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    @else
+                        <div class="alert alert-dark border-secondary text-muted small w-100 mb-0 d-flex align-items-center justify-content-center text-center gap-2" style="background: rgba(255, 255, 255, 0.03);">
+                            <i class="bi bi-lock-fill text-neon-orange fs-5"></i>
+                            <span>Budget remarks and financial logs are locked because this Plan Record status is <strong>{{ strtoupper($plan->status) }}</strong>. Only plans in <strong>OPEN</strong> status accept operative contributions.</span>
                         </div>
-                    </form>
+                    @endif
                 </div>
             </div>
         </div>

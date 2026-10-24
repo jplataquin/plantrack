@@ -3,10 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\Budget;
+use App\Models\CommentAttachment;
 use App\Models\PlanRecord;
 use App\Models\TargetObjective;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -380,5 +383,150 @@ class BudgetComponentTest extends TestCase
         $response->assertJsonStructure(['html']);
         $this->assertStringContainsString('budget-item', $response->json('html'));
         $this->assertStringContainsString('First Ever Budget Item', $response->json('html'));
+    }
+
+    public function test_user_can_upload_file_attachment_and_link_to_budget_remark(): void
+    {
+        $budget = Budget::create([
+            'plan_record_id' => $this->plan->id,
+            'user_id' => $this->marshall->id,
+            'description' => 'Operations Software License',
+            'quantity' => 12000,
+            'unit' => 'USD',
+        ]);
+
+        $uploadId = 'budget_file_'.uniqid();
+        $chunk = UploadedFile::fake()->createWithContent('invoice.pdf', 'PDF invoice content for software license');
+
+        $this->actingAs($this->executor)->post(route('comments.upload.chunk'), [
+            'upload_id' => $uploadId,
+            'chunk_index' => 0,
+            'total_chunks' => 1,
+            'file' => $chunk,
+        ])->assertStatus(200);
+
+        $assembleRes = $this->actingAs($this->executor)->postJson(route('comments.upload.assemble'), [
+            'upload_id' => $uploadId,
+            'filename' => 'invoice.pdf',
+            'total_chunks' => 1,
+        ]);
+
+        $assembleRes->assertStatus(200);
+        $attachmentId = $assembleRes->json('attachment_id');
+
+        $commentRes = $this->actingAs($this->executor)->post(route('comments.store'), [
+            'commentable_type' => 'budget',
+            'commentable_id' => $budget->id,
+            'body' => 'Attached the vendor invoice receipt.',
+            'attachment_ids' => [$attachmentId],
+        ]);
+
+        $commentRes->assertRedirect(route('plans.show', $this->plan));
+
+        $budget->refresh();
+        $this->assertCount(1, $budget->comments);
+        $comment = $budget->comments->first();
+        $this->assertEquals('Attached the vendor invoice receipt.', $comment->body);
+        $this->assertCount(1, $comment->attachments);
+        $this->assertEquals($attachmentId, $comment->attachments->first()->id);
+        $this->assertEquals('invoice.pdf', $comment->attachments->first()->original_name);
+
+        // Verify attachment download
+        $attachment = $comment->attachments->first();
+        $downloadRes = $this->actingAs($this->executor)->get(route('comments.attachments.download', $attachment));
+        $downloadRes->assertStatus(200);
+        $downloadRes->assertDownload('invoice.pdf');
+
+        // Verify attachment file cleanup on comment deletion
+        $filePath = storage_path('app/public/'.$attachment->file_path);
+        $this->assertFileExists($filePath);
+
+        $this->actingAs($this->executor)->delete(route('comments.destroy', $comment));
+        $this->assertFileDoesNotExist($filePath);
+        $this->assertDatabaseMissing('comments', ['id' => $comment->id]);
+    }
+
+    public function test_can_post_budget_remark_via_ajax_with_attachments(): void
+    {
+        $budget = Budget::create([
+            'plan_record_id' => $this->plan->id,
+            'user_id' => $this->marshall->id,
+            'description' => 'Hardware Server Rack',
+            'quantity' => 8000,
+            'unit' => 'USD',
+        ]);
+
+        $attachment = CommentAttachment::create([
+            'comment_id' => null,
+            'upload_id' => 'budget_att_'.uniqid(),
+            'original_name' => 'receipt.png',
+            'file_path' => 'comments/attachments/test_receipt.png',
+            'mime_type' => 'image/png',
+            'file_size' => 1024 * 50,
+        ]);
+
+        $response = $this->actingAs($this->marshall)->postJson(route('comments.store'), [
+            'commentable_type' => 'budget',
+            'commentable_id' => $budget->id,
+            'body' => 'Invoice for hardware acquisition confirmed.',
+            'attachment_ids' => [$attachment->id],
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'commentable_type' => 'budget',
+            'commentable_id' => $budget->id,
+            'comments_count' => 1,
+        ]);
+        $response->assertJsonPath('comment.attachments.0.id', $attachment->id);
+        $response->assertJsonPath('comment.attachments.0.original_name', 'receipt.png');
+
+        $attachment->refresh();
+        $this->assertNotNull($attachment->comment_id);
+    }
+
+    public function test_budget_card_renders_chunk_upload_elements(): void
+    {
+        $budget = Budget::create([
+            'plan_record_id' => $this->plan->id,
+            'user_id' => $this->marshall->id,
+            'description' => 'Consulting retainer',
+            'quantity' => 3000,
+            'unit' => 'USD',
+        ]);
+
+        $response = $this->actingAs($this->marshall)->get(route('plans.show', $this->plan));
+        $response->assertStatus(200);
+
+        // Verify HTML markup for the remark form and file upload elements
+        $response->assertSee('remark-form', false);
+        $response->assertSee('name="commentable_type" value="budget"', false);
+        $response->assertSee('staged-attachment-ids-container', false);
+        $response->assertSee('remark-staged-container', false);
+        $response->assertSee('remark-upload-progress', false);
+        $response->assertSee('remark-attach-btn', false);
+        $response->assertSee('remark-file-input', false);
+        $response->assertSee('remarks-empty-state', false);
+    }
+
+    public function test_executor_cannot_post_budget_remark_when_plan_is_not_open(): void
+    {
+        $this->plan->update(['status' => 'Closed']);
+
+        $budget = Budget::create([
+            'plan_record_id' => $this->plan->id,
+            'user_id' => $this->marshall->id,
+            'description' => 'Closed Plan Budget Item',
+            'quantity' => 500,
+        ]);
+
+        $response = $this->actingAs($this->executor)->post(route('comments.store'), [
+            'commentable_type' => 'budget',
+            'commentable_id' => $budget->id,
+            'body' => 'Attempting to remark on closed plan.',
+        ]);
+
+        $response->assertStatus(403);
     }
 }

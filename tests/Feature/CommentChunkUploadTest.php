@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Budget;
 use App\Models\CommentAttachment;
 use App\Models\PlanRecord;
 use App\Models\TargetObjective;
@@ -372,5 +373,49 @@ class CommentChunkUploadTest extends TestCase
         $response->assertSee('slideshowZoomInBtn');
         $response->assertSee('slideshowRotateCWBtn');
         $response->assertSee('slideshowRotateCCWBtn');
+    }
+
+    public function test_can_attach_file_to_budget_component_remark(): void
+    {
+        $budget = $this->plan->budgets()->create([
+            'user_id' => $this->marshall->id,
+            'description' => 'Security Audit Vendor Fee',
+            'quantity' => '15000',
+            'unit' => 'USD',
+        ]);
+
+        $uploadId = 'budget_chunk_test_'.uniqid();
+        $chunk = UploadedFile::fake()->createWithContent('audit_agreement.pdf', 'Signed security vendor agreement');
+
+        $this->actingAs($this->executor)->post(route('comments.upload.chunk'), [
+            'upload_id' => $uploadId,
+            'chunk_index' => 0,
+            'total_chunks' => 1,
+            'file' => $chunk,
+        ])->assertStatus(200);
+
+        $assembleRes = $this->actingAs($this->executor)->postJson(route('comments.upload.assemble'), [
+            'upload_id' => $uploadId,
+            'filename' => 'audit_agreement.pdf',
+            'total_chunks' => 1,
+        ]);
+
+        $assembleRes->assertStatus(200);
+        $attachmentId = $assembleRes->json('attachment_id');
+
+        $commentRes = $this->actingAs($this->executor)->post(route('comments.store'), [
+            'commentable_type' => 'budget',
+            'commentable_id' => $budget->id,
+            'body' => 'Attached signed vendor agreement for budget verification.',
+            'attachment_ids' => [$attachmentId],
+        ]);
+
+        $commentRes->assertRedirect(route('plans.show', $this->plan));
+
+        $budget->refresh();
+        $this->assertCount(1, $budget->comments);
+        $this->assertCount(1, $budget->comments->first()->attachments);
+        $this->assertEquals($attachmentId, $budget->comments->first()->attachments->first()->id);
+        $this->assertEquals('audit_agreement.pdf', $budget->comments->first()->attachments->first()->original_name);
     }
 }

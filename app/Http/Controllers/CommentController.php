@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Budget;
 use App\Models\Comment;
 use App\Models\CommentAttachment;
 use App\Models\Resource;
@@ -20,8 +21,12 @@ class CommentController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->input('commentable_type') === Budget::class || $request->input('commentable_type') === 'App\\Models\\Budget') {
+            $request->merge(['commentable_type' => 'budget']);
+        }
+
         $validated = $request->validate([
-            'commentable_type' => 'required|string|in:target_objective,resource,risk_management',
+            'commentable_type' => 'required|string|in:target_objective,resource,risk_management,budget',
             'commentable_id' => 'required|integer',
             'body' => 'required|string|max:1000',
             'attachment_id' => 'nullable|integer|exists:comment_attachments,id',
@@ -33,6 +38,7 @@ class CommentController extends Controller
             'target_objective' => TargetObjective::class,
             'resource' => Resource::class,
             'risk_management' => RiskManagement::class,
+            'budget' => Budget::class,
         };
 
         $item = $modelClass::findOrFail($validated['commentable_id']);
