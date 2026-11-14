@@ -141,7 +141,7 @@ class AdminController extends Controller
         $user = User::create([
             'name' => $cleanName,
             'email' => $cleanEmail,
-            'password' => Hash::make($password),
+            'password' => $password,
             'must_reset_password' => $mustReset,
         ]);
 
@@ -215,7 +215,7 @@ class AdminController extends Controller
         $plainPassword = null;
         if (! empty($validated['new_password'])) {
             $plainPassword = $validated['new_password'];
-            $updateData['password'] = Hash::make($plainPassword);
+            $updateData['password'] = $plainPassword;
             $passwordChanged = true;
         }
 

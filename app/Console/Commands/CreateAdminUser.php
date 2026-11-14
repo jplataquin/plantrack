@@ -115,7 +115,7 @@ class CreateAdminUser extends Command
             }
 
             if ($this->option('password')) {
-                $existingUser->password = Hash::make($password);
+                $existingUser->password = $password;
             }
 
             if ($mustReset) {
@@ -146,7 +146,7 @@ class CreateAdminUser extends Command
         $user = User::create([
             'name' => $name,
             'email' => $email,
-            'password' => Hash::make($password),
+            'password' => $password,
             'must_reset_password' => $mustReset,
         ]);
 

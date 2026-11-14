@@ -273,7 +273,7 @@ class ProfileController extends Controller
         ]);
 
         $user->update([
-            'password' => Hash::make($validated['password']),
+            'password' => $validated['password'],
         ]);
 
         return redirect()->route('profile.show')->with('success', 'Password updated successfully.');

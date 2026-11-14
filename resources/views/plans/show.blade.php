@@ -236,7 +236,7 @@
                     <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
                         <h3 class="font-orbitron fw-bold text-white mb-0">{{ $plan->title }}</h3>
                         @if ($plan->project)
-                            <a href="{{ route('projects.show', $plan->project) }}" class="badge text-decoration-none" style="background: rgba(168, 85, 247, 0.15); border: 1px solid var(--neon-violet); color: var(--neon-violet-light);">
+                            <a href="{{ route('projects.show', $plan->project) }}" class="badge text-decoration-none fs-6 px-3 py-2 font-rajdhani" style="background: rgba(168, 85, 247, 0.15); border: 1px solid var(--neon-violet); color: var(--neon-violet-light);">
                                 <i class="bi bi-folder-fill me-1"></i>{{ $plan->project->name }}
                             </a>
                         @endif

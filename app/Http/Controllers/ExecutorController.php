@@ -112,7 +112,7 @@ class ExecutorController extends Controller
         $executor = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'password' => Hash::make($temporaryPassword),
+            'password' => $temporaryPassword,
             'must_reset_password' => true,
         ]);
 

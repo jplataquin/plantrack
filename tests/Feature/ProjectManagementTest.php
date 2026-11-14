@@ -425,6 +425,7 @@ class ProjectManagementTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Showcase Project');
+        $response->assertSee('fs-6 px-3 py-2 font-rajdhani');
         $response->assertDontSee('ASSIGNED PROJECT');
         $response->assertDontSee('title="Change Project"', false);
     }

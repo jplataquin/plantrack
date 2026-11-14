@@ -132,7 +132,7 @@ class ResetAdminPassword extends Command
         }
 
         // Update password and reset flag
-        $user->password = Hash::make($password);
+        $user->password = $password;
         $user->must_reset_password = $mustReset;
         $user->save();
 

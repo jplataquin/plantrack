@@ -451,6 +451,39 @@ class AdminModuleTest extends TestCase
         $indexResponse->assertStatus(200);
     }
 
+    public function test_admin_can_update_executor_and_issue_new_custom_password(): void
+    {
+        $response = $this->actingAs($this->admin)->put(route('admin.users.update', $this->executor), [
+            'name' => $this->executor->name,
+            'email' => $this->executor->email,
+            'role' => 'Executor',
+            'new_password' => 'NewExecutorPass123!',
+            'force_password_reset' => 0,
+        ]);
+
+        $response->assertRedirect(route('admin.index'));
+        $response->assertSessionHas('success');
+        $response->assertSessionHas('created_executor_password', 'NewExecutorPass123!');
+        $response->assertSessionHas('created_executor_must_reset', false);
+
+        $updatedExecutor = $this->executor->fresh();
+        $this->assertTrue(Hash::check('NewExecutorPass123!', $updatedExecutor->password));
+        $this->assertFalse($updatedExecutor->must_reset_password);
+
+        // Executor logs in with new password directly
+        auth()->logout();
+        $loginResponse = $this->post('/login', [
+            'email' => $this->executor->email,
+            'password' => 'NewExecutorPass123!',
+        ]);
+        $loginResponse->assertRedirect('/home');
+        $this->assertAuthenticatedAs($updatedExecutor);
+
+        // Accessing main route does not redirect to password reset
+        $indexResponse = $this->actingAs($updatedExecutor)->get(route('executors.index'));
+        $indexResponse->assertStatus(200);
+    }
+
     public function test_admin_can_clear_pending_password_reset_flag_without_changing_password(): void
     {
         $this->marshall->update(['must_reset_password' => true]);
